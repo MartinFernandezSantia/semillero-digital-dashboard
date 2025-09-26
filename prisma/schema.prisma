@@ -1,0 +1,44 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider  = "postgresql"
+    url       = env("DATABASE_URL")
+    directUrl = env("DIRECT_URL")
+}
+
+// Modelo de Usuario simple para almacenar datos básicos
+model User {
+    id          String   @id @default(cuid())
+    googleId    String   @unique  // ID de Google Classroom
+    email       String   @unique
+    name        String
+    photoUrl    String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    // Relaciones
+    attendances Attendance[]
+
+    @@map("users")
+}
+
+// Modelo de Asistencia
+model Attendance {
+    id        String   @id @default(cuid())
+    userId    String   // Referencia al usuario
+    courseId  String   // ID del curso de Google Classroom
+    date      DateTime // Fecha de la asistencia (solo fecha, sin hora)
+    present   Boolean  @default(false) // true = presente, false = ausente
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Relaciones
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    // Índices para optimizar consultas
+    @@unique([userId, courseId, date]) // Un usuario solo puede tener una asistencia por curso por día
+    @@index([courseId, date]) // Para consultar asistencias por curso y fecha
+    @@map("attendances")
+}
